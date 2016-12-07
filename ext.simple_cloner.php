@@ -262,6 +262,42 @@ class Simple_cloner_ext {
 				);
 			}
 
+			// Simple Cloner bug - attempted fix for Bloqs compatibility.
+			foreach($data as $key => $value) {
+				if(strpos($key, 'field_id') !== FALSE)
+				{
+					// Get field ID number to query exp_channel_fields table.
+					$field_id = explode('field_id_', $key);
+					$field_id = $field_id[1];
+
+					$grid_fields = ee()->db->query("SELECT field_id, field_name FROM exp_channel_fields WHERE field_id = " . $field_id . " AND field_type = 'grid'");
+
+					if($grid_fields->num_rows != 0)
+					{
+						$grid_fields = $grid_fields->result();
+
+						foreach($grid_fields as $k => $v) {
+							$arrayValue = get_object_vars($v);
+
+							$grid_id = $arrayValue['field_id'];
+							$grid_data = ee()->db->query("SELECT * FROM exp_channel_grid_field_" . $grid_id . " WHERE entry_id = ". $data['entry_id']);
+
+							$grid = $grid_data->result();
+							
+							foreach($grid as $gridKey => $gridRow) {
+								$row = get_object_vars($gridRow);
+								$table_id = 'exp_channel_grid_field_' . $grid_id;
+								$row['entry_id'] = $query_result;
+								unset($row['row_id']);
+								
+								// This insert is problematic. Creates key in exp_grid_field_* table, but does not add row to table. Code could be refactored to build complete array and insert into different tables with one insert statement (far more efficient but this is first draft). 
+								ee()->db->insert($table_id, $row);
+							}
+						}
+					}
+				}
+			}
+
 			// Update cloned entry with custom field data.
 			ee()->api_channel_entries->update_entry($query_result, $data);
 			ee()->db->update(

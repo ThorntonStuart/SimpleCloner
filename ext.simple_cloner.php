@@ -14,7 +14,7 @@ setlocale(LC_ALL, 'en_US.UTF8');
  */
 
 class Simple_cloner_ext {
-	
+
 	/**
 	 * Settings array
 	 *
@@ -37,7 +37,7 @@ class Simple_cloner_ext {
 	 * @param 	array
 	 * @return 	void
 	 */
-	public function __construct($settings = array()) 
+	public function __construct($settings = array())
 	{
 		// Load the settings library and initialize settings to default values.
 		ee()->load->library('simple_cloner_settings');
@@ -61,14 +61,14 @@ class Simple_cloner_ext {
 
 	/**
 	 * Format string to URI
-	 * 
+	 *
 	 * @access 	public
 	 * @param 	string
 	 * @return 	string
 	 */
 	public function strToUrl($str, $replace = array(), $delimiter = '-')
 	{
-		// If replace parameter empty, 
+		// If replace parameter empty,
 		if(! empty($replace))
 		{
 			$str = str_replace((array)$replace, ' ', $str);
@@ -102,7 +102,7 @@ class Simple_cloner_ext {
 			$entry_query_array = $entry_query[0];
 			$entry_query_array = get_object_vars($entry_query_array);
 		}
-		
+
 		// Check that row has been assigned and that the entry cloning flag has been checked.
 		if(isset($entry_query_array) == TRUE && $entry_query_array['clone_entry'] != 0)
 		{
@@ -122,7 +122,7 @@ class Simple_cloner_ext {
 				->where('enabled', 'y')
 				->where('class', __CLASS__)
 				->get('extensions', 1);
-			
+
 			if($settings_query->num_rows())
 			{
 				$settings_query = unserialize($settings_query->row()->settings);
@@ -130,8 +130,8 @@ class Simple_cloner_ext {
 				if(strlen($entry_query_array['title_suffix']) > 0)
 				{
 					$data['title'] = $data['title'] . '_' . $entry_query_array['title_suffix'];
-				} 
-				elseif (strlen($settings_query['title_suffix']) > 0) 
+				}
+				elseif (strlen($settings_query['title_suffix']) > 0)
 				{
 					$data['title'] = $data['title'] . '_' . $settings_query['title_suffix'];
 				}
@@ -140,8 +140,8 @@ class Simple_cloner_ext {
 				{
 					$urlString = $data['url_title'] . '_' . $entry_query_array['url_title_suffix'];
 					$data['url_title'] = $this->strToUrl($urlString);
-				} 
-				elseif (strlen($settings_query['url_title_suffix']) > 0) 
+				}
+				elseif (strlen($settings_query['url_title_suffix']) > 0)
 				{
 					$urlString = $data['url_title'] . '_' . $settings_query['url_title_suffix'];
 					$data['url_title'] = $this->strToUrl($urlString);
@@ -197,10 +197,10 @@ class Simple_cloner_ext {
 					if($validate_require->num_rows != 0)
 					{
 						$validate_require = $validate_require->result();
-						
+
 						foreach ($validate_require as $k => $v) {
 							$arrayValue = get_object_vars($v);
-							
+
 							$str_id = 'field_id_' . $arrayValue['field_id'];
 							$str_ft = 'field_ft_' . $arrayValue['field_id'];
 							$str_name = $arrayValue['field_name'];
@@ -263,6 +263,21 @@ class Simple_cloner_ext {
 			}
 
 			// Simple Cloner bug - attempted fix for Bloqs compatibility.
+
+
+			// Update cloned entry with custom field data.
+			//Modified the position of this line... When running this line after the grid loop
+			// it erases all rows in the DB pertaining to the $query_result ID's grid info
+			// That is why the insert was problematic. It would create the rows but it would delete them right after they were all created
+			//Which is exactly why the primary KEY was going up and the rows were not there.
+			//Running this line before all of the special fieldtypes will successfully duplicate the custom fields
+			//And then handle the special fieldtypes that store their data in other places
+			// 'GRID' - DONE (Relationship field not done in grid)
+			// 'BLOQS' -- DONE (Relationship field not done in bloqs)
+			// 'RELATIONSHIP' -- DONE
+
+			ee()->api_channel_entries->update_entry($query_result, $data);
+
 			foreach($data as $key => $value) {
 				if(strpos($key, 'field_id') !== FALSE)
 				{
@@ -276,6 +291,7 @@ class Simple_cloner_ext {
 					{
 						$grid_fields = $grid_fields->result();
 
+
 						foreach($grid_fields as $k => $v) {
 							$arrayValue = get_object_vars($v);
 
@@ -283,23 +299,109 @@ class Simple_cloner_ext {
 							$grid_data = ee()->db->query("SELECT * FROM exp_channel_grid_field_" . $grid_id . " WHERE entry_id = ". $data['entry_id']);
 
 							$grid = $grid_data->result();
-							
+
+
 							foreach($grid as $gridKey => $gridRow) {
 								$row = get_object_vars($gridRow);
-								$table_id = 'exp_channel_grid_field_' . $grid_id;
+								//Removed EXP from string because not all users use EXP and ee()->db->insert prepends your prefix anyhow --peter
+								$table_id = 'channel_grid_field_' . $grid_id;
 								$row['entry_id'] = $query_result;
-								unset($row['row_id']);
-								
-								// This insert is problematic. Creates key in exp_grid_field_* table, but does not add row to table. Code could be refactored to build complete array and insert into different tables with one insert statement (far more efficient but this is first draft). 
+								$row['row_id'] = 0;
+								// Loop all rows for grid and insert new rows for duplicated entry. Will have to do something similar for bloqs. --peter
 								ee()->db->insert($table_id, $row);
+
 							}
 						}
 					}
 				}
 			}
 
-			// Update cloned entry with custom field data.
-			ee()->api_channel_entries->update_entry($query_result, $data);
+			foreach($data as $key => $value) {
+				if(strpos($key, 'field_id') !== FALSE)
+				{
+					// Get field ID number to query exp_channel_fields table.
+					$field_id = explode('field_id_', $key);
+					$field_id = $field_id[1];
+
+					$grid_fields = ee()->db->query("SELECT field_id, field_name FROM exp_channel_fields WHERE field_id = " . $field_id . " AND field_type = 'relationship'");
+
+					if($grid_fields->num_rows != 0)
+					{
+						$grid_fields = $grid_fields->result();
+
+						foreach($grid_fields as $k => $v) {
+							$arrayValue = get_object_vars($v);
+
+							$grid_id = $arrayValue['field_id'];
+							$grid_data = ee()->db->query("SELECT * FROM exp_relationships WHERE parent_id = ". $data['entry_id']);
+
+							$grid = $grid_data->result();
+
+
+							foreach($grid as $gridKey => $gridRow) {
+								$row = get_object_vars($gridRow);
+								$row['parent_id'] = $query_result;
+								$row['relationship_id'] = 0;
+								// Loop all rows for grid and insert new rows for duplicated entry. Will have to do something similar for bloqs. --peter
+								ee()->db->insert('relationships', $row);
+							}
+						}
+					}
+				}
+			}
+
+			foreach($data as $key => $value) {
+				if(strpos($key, 'field_id') !== FALSE)
+				{
+					// Get field ID number to query exp_channel_fields table.
+					$field_id = explode('field_id_', $key);
+					$field_id = $field_id[1];
+
+					$grid_fields = ee()->db->query("SELECT field_id, field_name FROM exp_channel_fields WHERE field_id = " . $field_id . " AND field_type = 'bloqs'");
+
+					if($grid_fields->num_rows != 0)
+					{
+						$grid_fields = $grid_fields->result();
+
+						foreach($grid_fields as $k => $v) {
+							$arrayValue = get_object_vars($v);
+
+							$grid_id = $arrayValue['field_id'];
+							$grid_data = ee()->db->query("SELECT * FROM exp_blocks_block WHERE entry_id = ". $data['entry_id']);
+
+							$grid = $grid_data->result();
+
+
+							foreach($grid as $gridKey => $gridRow) {
+
+
+								ee()->db->insert('blocks_block', array(
+									'blockdefinition_id' => $gridRow->blockdefinition_id,
+									'site_id' => $gridRow->site_id,
+									'entry_id' => $query_result,
+									'field_id' => $gridRow->field_id,
+									'order' => $gridRow->order
+								));
+
+								$latest_id = ee()->db->insert_id();
+								$bloqs_content_rows = ee()->db->query("SELECT * FROM exp_blocks_atom WHERE block_id = ". $gridRow->id);
+								$result = $bloqs_content_rows->result();
+
+								foreach($result as $ki => $val) {
+									ee()->db->insert('blocks_atom', array(
+										'block_id' => $latest_id,
+										'atomdefinition_id' => $val->atomdefinition_id,
+										'data' => $val->data
+									));
+								}
+							}
+						}
+
+					}
+				}
+			}
+
+
 			ee()->db->update(
 				'exp_simple_cloner_content',
 				array(

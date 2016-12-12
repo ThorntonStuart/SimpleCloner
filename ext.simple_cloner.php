@@ -262,21 +262,15 @@ class Simple_cloner_ext {
 				);
 			}
 
-			// Simple Cloner bug - attempted fix for Bloqs compatibility.
-
-
 			// Update cloned entry with custom field data.
-			//Modified the position of this line... When running this line after the grid loop
-			// it erases all rows in the DB pertaining to the $query_result ID's grid info
-			// That is why the insert was problematic. It would create the rows but it would delete them right after they were all created
-			//Which is exactly why the primary KEY was going up and the rows were not there.
-			//Running this line before all of the special fieldtypes will successfully duplicate the custom fields
-			//And then handle the special fieldtypes that store their data in other places
+
+			ee()->api_channel_entries->update_entry($query_result, $data);
+
+			// Simple Cloner bug - attempted fix for Bloqs compatibility.
+		
 			// 'GRID' - DONE (Relationship field not done in grid)
 			// 'BLOQS' -- DONE (Relationship field not done in bloqs)
 			// 'RELATIONSHIP' -- DONE
-
-			ee()->api_channel_entries->update_entry($query_result, $data);
 
 			foreach($data as $key => $value) {
 				if(strpos($key, 'field_id') !== FALSE)

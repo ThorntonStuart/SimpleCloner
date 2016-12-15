@@ -266,8 +266,23 @@ class Simple_cloner_ext {
 
 			ee()->api_channel_entries->update_entry($query_result, $data);
 
+			//assets support alone
+
+			$assets_selections = ee()->db->query('SELECT * FROM exp_assets_selections WHERE entry_id = '.$data['entry_id'].' AND content_type IS NULL');
+
+			if ($assets_selections->num_rows != 0){
+				$all_assets = $assets_selections->result();
+				foreach($all_assets as $kee => $vals){
+					$prop = get_object_vars($vals);
+					$prop['entry_id'] = $query_result;
+					$prop['id'] = 0;
+					ee()->db->insert('assets_selections', $prop);
+
+				}
+			}
+
 			// Simple Cloner bug - attempted fix for Bloqs compatibility.
-		
+
 			// 'GRID' - DONE (Relationship field not done in grid)
 			// 'BLOQS' -- DONE (Relationship field not done in bloqs)
 			// 'RELATIONSHIP' -- DONE
@@ -300,9 +315,25 @@ class Simple_cloner_ext {
 								//Removed EXP from string because not all users use EXP and ee()->db->insert prepends your prefix anyhow --peter
 								$table_id = 'channel_grid_field_' . $grid_id;
 								$row['entry_id'] = $query_result;
+								$save_row_id = $row['row_id'];
 								$row['row_id'] = 0;
 								// Loop all rows for grid and insert new rows for duplicated entry. Will have to do something similar for bloqs. --peter
 								ee()->db->insert($table_id, $row);
+
+								$new_row_id = ee()->db->insert_id();
+
+								$assets_selections = ee()->db->query('SELECT * FROM exp_assets_selections WHERE entry_id = '.$data['entry_id'].' AND content_type = "grid" AND row_id ='.$save_row_id);
+								if ($assets_selections->num_rows != 0){
+									$all_assets = $assets_selections->result();
+									foreach($all_assets as $kee => $vals){
+										$prop = get_object_vars($vals);
+										$prop['entry_id'] = $query_result;
+										$prop['id'] = 0;
+										$prop['row_id'] = $new_row_id;
+										ee()->db->insert('assets_selections', $prop);
+
+									}
+								}
 
 							}
 						}

@@ -409,7 +409,6 @@ class Simple_cloner_ext {
 								));
 
 								$save_row_id = $gridRow->id;
-								print_r($save_row_id);
 
 
 								$latest_id = ee()->db->insert_id();
@@ -422,7 +421,7 @@ class Simple_cloner_ext {
 										$prop = get_object_vars($vals);
 										$prop['entry_id'] = $query_result;
 										$prop['id'] = 0;
-										$prop['row_id'] = $new_row_id;
+										$prop['row_id'] = $latest_id;
 										ee()->db->insert('assets_selections', $prop);
 
 									}

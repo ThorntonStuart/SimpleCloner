@@ -408,7 +408,25 @@ class Simple_cloner_ext {
 									'order' => $gridRow->order
 								));
 
+								$save_row_id = $gridRow->id;
+								print_r($save_row_id);
+
+
 								$latest_id = ee()->db->insert_id();
+
+
+								$assets_selections = ee()->db->query('SELECT * FROM exp_assets_selections WHERE entry_id = '.$data['entry_id'].' AND content_type = "grid" AND row_id ='.$save_row_id);
+								if ($assets_selections->num_rows != 0){
+									$all_assets = $assets_selections->result();
+									foreach($all_assets as $kee => $vals){
+										$prop = get_object_vars($vals);
+										$prop['entry_id'] = $query_result;
+										$prop['id'] = 0;
+										$prop['row_id'] = $new_row_id;
+										ee()->db->insert('assets_selections', $prop);
+
+									}
+								}
 								$bloqs_content_rows = ee()->db->query("SELECT * FROM exp_blocks_atom WHERE block_id = ". $gridRow->id);
 								$result = $bloqs_content_rows->result();
 

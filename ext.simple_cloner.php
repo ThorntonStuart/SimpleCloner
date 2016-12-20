@@ -266,6 +266,21 @@ class Simple_cloner_ext {
 
 			ee()->api_channel_entries->update_entry($query_result, $data);
 
+			//carry over the categories
+
+			$cats = ee()->db->query('SELECT * FROM exp_category_posts WHERE entry_id = '.$data['entry_id']);
+
+			if ($cats->num_rows != 0){
+				$all_cats = $cats->result();
+				foreach($all_cats as $kee => $vals){
+					$prop = get_object_vars($vals);
+
+					$prop['entry_id'] = $query_result;
+					ee()->db->insert('category_posts', $prop);
+
+				}
+			}
+
 			//assets support alone
 
 			$assets_selections = ee()->db->query('SELECT * FROM exp_assets_selections WHERE entry_id = '.$data['entry_id'].' AND content_type IS NULL');
@@ -275,7 +290,6 @@ class Simple_cloner_ext {
 				foreach($all_assets as $kee => $vals){
 					$prop = get_object_vars($vals);
 					$prop['entry_id'] = $query_result;
-					$prop['id'] = 0;
 					ee()->db->insert('assets_selections', $prop);
 
 				}
@@ -328,7 +342,6 @@ class Simple_cloner_ext {
 									foreach($all_assets as $kee => $vals){
 										$prop = get_object_vars($vals);
 										$prop['entry_id'] = $query_result;
-										$prop['id'] = 0;
 										$prop['row_id'] = $new_row_id;
 										ee()->db->insert('assets_selections', $prop);
 
@@ -420,7 +433,6 @@ class Simple_cloner_ext {
 									foreach($all_assets as $kee => $vals){
 										$prop = get_object_vars($vals);
 										$prop['entry_id'] = $query_result;
-										$prop['id'] = 0;
 										$prop['row_id'] = $latest_id;
 										ee()->db->insert('assets_selections', $prop);
 

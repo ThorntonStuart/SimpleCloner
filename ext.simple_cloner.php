@@ -269,6 +269,7 @@ class Simple_cloner_ext {
 
 			ee()->api_channel_entries->update_entry($query_result, $data);
 
+
 			//Transcribe Support for assigning clone as a 'translation'
 
 
@@ -307,6 +308,7 @@ class Simple_cloner_ext {
 					}
 				}
 			}
+
 
 
 			//carry over the categories

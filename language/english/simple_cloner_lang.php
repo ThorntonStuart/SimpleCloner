@@ -14,6 +14,8 @@ $lang = array(
 'tab_update_entry_time'	=>	'Update Entry Time',
 'tab_update_entry_time_instructions'	=>	'Update the entry time from the original date to the date of the cloning.',
 'tab_clone_entry'	=>	'Clone Entry',
+'tab_clone_entry_translated'	=>	'Use Clone as translation?',
+'tab_clone_entry_translated_instructions'	=>	'Would you like to use the clone as a translated version of this entry?',
 'tab_clone_entry_instructions'	=>	'Do you want to clone this entry?',
 
 'general_settings'=>'Settings',

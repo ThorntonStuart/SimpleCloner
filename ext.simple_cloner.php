@@ -212,7 +212,7 @@ class Simple_cloner_ext {
 				}
 			}
 
-		 	ee()->api_channel_fields->setup_entry_settings($data['channel_id'], $data_template);
+			ee()->api_channel_fields->setup_entry_settings($data['channel_id'], $data_template);
 
 			if (! ee()->api_channel_entries->save_entry($data_template, $data['channel_id']))
 			{
@@ -222,12 +222,12 @@ class Simple_cloner_ext {
 
 			// Select entry ID of newly cloned entry.
 			$query = ee()->db->query("SELECT MAX(entry_id) FROM `exp_channel_titles`");
-			$query_result = $query->result();
+			$entry_id_of_duplicate = $query->result();
 
-			foreach ($query_result as $key => $value) {
+			foreach ($entry_id_of_duplicate as $key => $value) {
 				$array = get_object_vars($value);
 				foreach ($array as $k => $v) {
-					$query_result = $v;
+					$entry_id_of_duplicate = $v;
 				}
 			}
 
@@ -253,7 +253,7 @@ class Simple_cloner_ext {
 				ee()->db->insert(
 					'seolite_content',
 					array(
-						'entry_id'	=>	$query_result,
+						'entry_id'	=>	$entry_id_of_duplicate,
 						'site_id'	=>	$data['site_id'],
 						'title'		=>	'',
 						'keywords'	=>	'',
@@ -264,7 +264,7 @@ class Simple_cloner_ext {
 
 			// Update cloned entry with custom field data.
 
-			ee()->api_channel_entries->update_entry($query_result, $data);
+			ee()->api_channel_entries->update_entry($entry_id_of_duplicate, $data);
 
 			//carry over the categories
 
@@ -275,23 +275,27 @@ class Simple_cloner_ext {
 				foreach($all_cats as $kee => $vals){
 					$prop = get_object_vars($vals);
 
-					$prop['entry_id'] = $query_result;
+					$prop['entry_id'] = $entry_id_of_duplicate;
 					ee()->db->insert('category_posts', $prop);
 
 				}
 			}
 
-			//assets support alone
+			// Ansel support
+			$ansel_images = ee()->db->query('SELECT * FROM exp_ansel_images WHERE content_id = '.$data['entry_id'].' AND content_type = "channel"');
 
+			$this->duplicate_ansel($ansel_images, $entry_id_of_duplicate);
+
+
+			//assets support alone
 			$assets_selections = ee()->db->query('SELECT * FROM exp_assets_selections WHERE entry_id = '.$data['entry_id'].' AND content_type IS NULL');
 
 			if ($assets_selections->num_rows != 0){
 				$all_assets = $assets_selections->result();
-				foreach($all_assets as $kee => $vals){
+				foreach($all_assets as $kee => $vals) {
 					$prop = get_object_vars($vals);
-					$prop['entry_id'] = $query_result;
+					$prop['entry_id'] = $entry_id_of_duplicate;
 					ee()->db->insert('assets_selections', $prop);
-
 				}
 			}
 
@@ -314,7 +318,6 @@ class Simple_cloner_ext {
 					{
 						$grid_fields = $grid_fields->result();
 
-
 						foreach($grid_fields as $k => $v) {
 							$arrayValue = get_object_vars($v);
 
@@ -328,7 +331,7 @@ class Simple_cloner_ext {
 								$row = get_object_vars($gridRow);
 								//Removed EXP from string because not all users use EXP and ee()->db->insert prepends your prefix anyhow --peter
 								$table_id = 'channel_grid_field_' . $grid_id;
-								$row['entry_id'] = $query_result;
+								$row['entry_id'] = $entry_id_of_duplicate;
 								$save_row_id = $row['row_id'];
 								$row['row_id'] = 0;
 								// Loop all rows for grid and insert new rows for duplicated entry. Will have to do something similar for bloqs. --peter
@@ -341,12 +344,15 @@ class Simple_cloner_ext {
 									$all_assets = $assets_selections->result();
 									foreach($all_assets as $kee => $vals){
 										$prop = get_object_vars($vals);
-										$prop['entry_id'] = $query_result;
+										$prop['entry_id'] = $entry_id_of_duplicate;
 										$prop['row_id'] = $new_row_id;
 										ee()->db->insert('assets_selections', $prop);
-
 									}
 								}
+
+								// Ansel support
+								$ansel_images = ee()->db->query('SELECT * FROM exp_ansel_images WHERE content_id = '.$data['entry_id'].' AND content_type = "grid" AND row_id ='.$save_row_id);
+								$this->duplicate_ansel($ansel_images, $entry_id_of_duplicate, $new_row_id);
 
 							}
 						}
@@ -378,7 +384,7 @@ class Simple_cloner_ext {
 
 							foreach($grid as $gridKey => $gridRow) {
 								$row = get_object_vars($gridRow);
-								$row['parent_id'] = $query_result;
+								$row['parent_id'] = $entry_id_of_duplicate;
 								$row['relationship_id'] = 0;
 								// Loop all rows for grid and insert new rows for duplicated entry. Will have to do something similar for bloqs. --peter
 								ee()->db->insert('relationships', $row);
@@ -401,43 +407,42 @@ class Simple_cloner_ext {
 					{
 						$grid_fields = $grid_fields->result();
 
-						foreach($grid_fields as $k => $v) {
-							$arrayValue = get_object_vars($v);
+						foreach($grid_fields as $grid_field) {
+							$arrayValue = get_object_vars($grid_field);
 
 							$grid_id = $arrayValue['field_id'];
 							$grid_data = ee()->db->query("SELECT * FROM exp_blocks_block WHERE entry_id = ". $data['entry_id']);
 
 							$grid = $grid_data->result();
 
-
 							foreach($grid as $gridKey => $gridRow) {
-
 
 								ee()->db->insert('blocks_block', array(
 									'blockdefinition_id' => $gridRow->blockdefinition_id,
 									'site_id' => $gridRow->site_id,
-									'entry_id' => $query_result,
+									'entry_id' => $entry_id_of_duplicate,
 									'field_id' => $gridRow->field_id,
 									'order' => $gridRow->order
 								));
 
 								$save_row_id = $gridRow->id;
-
-
 								$latest_id = ee()->db->insert_id();
-
 
 								$assets_selections = ee()->db->query('SELECT * FROM exp_assets_selections WHERE entry_id = '.$data['entry_id'].' AND content_type = "grid" AND row_id ='.$save_row_id);
 								if ($assets_selections->num_rows != 0){
 									$all_assets = $assets_selections->result();
 									foreach($all_assets as $kee => $vals){
 										$prop = get_object_vars($vals);
-										$prop['entry_id'] = $query_result;
+										$prop['entry_id'] = $entry_id_of_duplicate;
 										$prop['row_id'] = $latest_id;
 										ee()->db->insert('assets_selections', $prop);
-
 									}
 								}
+
+								// Ansel support
+								$ansel_images = ee()->db->query('SELECT * FROM exp_ansel_images WHERE content_id = '.$data['entry_id'].' AND content_type = "blocks" AND row_id ='.$save_row_id);
+								$this->duplicate_ansel($ansel_images, $entry_id_of_duplicate, $latest_id);
+
 								$bloqs_content_rows = ee()->db->query("SELECT * FROM exp_blocks_atom WHERE block_id = ". $gridRow->id);
 								$result = $bloqs_content_rows->result();
 
@@ -450,11 +455,9 @@ class Simple_cloner_ext {
 								}
 							}
 						}
-
 					}
 				}
 			}
-
 
 			ee()->db->update(
 				'exp_simple_cloner_content',
@@ -469,4 +472,105 @@ class Simple_cloner_ext {
 			return FALSE;
 		}
 	}
+
+	/**
+	 * [generate_new_ansel_image description]
+	 * @param  [type] $ansel_data [description]
+	 * @return [type]             [description]
+	 */
+	private function generate_new_ansel_image($ansel_data, $original_ansel_id, $new_ansel_id)
+	{
+		// get the server path of the images
+		$upload_prefs = ee()->db->select('server_path')
+			->from('upload_prefs')
+			->where('id', preg_replace('/\D/', '', $ansel_data['upload_location_id']))
+			->get()->row_array();
+
+		$server_path = $upload_prefs['server_path'];
+
+		// Find all the folders that the previous ansel field used
+		$assets_folders = ee()->db->select('*')
+			->from('assets_folders')
+			->where('folder_name', $original_ansel_id)
+			->get();
+
+		// Loop through each folder and make a new copy of it
+		foreach($assets_folders->result() as $assets_folder_object)
+		{
+			$assets_folder = get_object_vars($assets_folder_object);
+
+			// get the old and new image paths
+			$original_path = $server_path . $assets_folder['full_path'];
+			$new_path = str_replace($original_ansel_id, $new_ansel_id, $original_path);
+
+			// create the new folder and copy all of the original contents to it
+			$this->recurse_copy($original_path, $new_path);
+
+			// Create a new array with the updated data in it, and insert it into the assets_folders table
+			$new_assets_folder = $assets_folder;
+			$new_assets_folder['folder_name'] = $new_ansel_id;
+			$new_assets_folder['full_path'] = str_replace($original_ansel_id, $new_ansel_id, $new_assets_folder['full_path']);
+			unset($new_assets_folder['folder_id']);
+
+			ee()->db->insert('assets_folders', $new_assets_folder);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Pass ansel images that need to be duplicated and id's, and duplicate it
+	 * @param  [type] $ansel_images          [description]
+	 * @param  [type] $entry_id_of_duplicate [description]
+	 * @param  [type] $new_row_id            [description]
+	 * @return [type]                        [description]
+	 */
+	private function duplicate_ansel($ansel_images, $entry_id_of_duplicate, $new_row_id = null)
+	{
+		foreach($ansel_images->result() as $ansel_object)
+		{
+			// Get data as array, set the new entry_id, unset the original id
+			$ansel_data = get_object_vars($ansel_object);
+			$ansel_data['content_id'] = $entry_id_of_duplicate;
+
+			if($new_row_id)
+			{
+				$ansel_data['row_id'] = $new_row_id;
+				// $ansel_data['col_id'] = ??? * TODO do I need to update/change this?
+			}
+
+			$original_ansel_id = $ansel_data['id'];
+			unset($ansel_data['id']);
+
+			ee()->db->insert('ansel_images', $ansel_data);
+			$new_ansel_id = ee()->db->insert_id();
+
+			// Now generate the new ansel image
+			$this->generate_new_ansel_image($ansel_data, $original_ansel_id, $new_ansel_id);
+		}
+	}
+
+	/**
+	 * Copies one folder to another location (recursively)
+	 * @param  [type] $src [description]
+	 * @param  [type] $dst [description]
+	 * @return [type]      [description]
+	 */
+	private function recurse_copy($src,$dst)
+	{
+		$dir = opendir($src);
+		@mkdir($dst);
+		while(false !== ( $file = readdir($dir)) ) {
+			if (( $file != '.' ) && ( $file != '..' )) {
+				if ( is_dir($src . '/' . $file) ) {
+					$this->recurse_copy($src . '/' . $file,$dst . '/' . $file);
+				}
+				else {
+					copy($src . '/' . $file,$dst . '/' . $file);
+				}
+			}
+		}
+		closedir($dir);
+	}
+
 }

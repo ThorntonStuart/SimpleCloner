@@ -452,6 +452,21 @@ class Simple_cloner_ext {
 										'data' => $val->data
 									));
 								}
+
+								// Relationship in bloqs support
+								$grid_data = ee()->db->query("SELECT * FROM exp_relationships WHERE parent_id = ". $data['entry_id']);
+
+								$grid = $grid_data->result();
+
+								foreach($grid as $gridKey => $gridRow) {
+									$row = get_object_vars($gridRow);
+									$row['parent_id'] = $entry_id_of_duplicate;
+									$row['grid_row_id'] = $latest_id;
+									unset($row['relationship_id']);
+
+									// Loop all rows for grid and insert new rows for duplicated entry. Will have to do something similar for bloqs. --peter
+									ee()->db->insert('relationships', $row);
+								}
 							}
 						}
 					}

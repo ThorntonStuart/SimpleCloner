@@ -15,7 +15,7 @@ class Simple_cloner_mcp {
 
 	var $vars = array();
 	var $class_name		=	SIMPLE_CLONER_NAME_FORMATTED;
-	
+
 	/**
 	 * Constructor
 	 *
@@ -95,7 +95,7 @@ class Simple_cloner_mcp {
 		$settings = array();
 
 		// Loop through default settings and check for saved values.
-		foreach (ee()->simple_cloner_settings->_default_settings as $key => $value) 
+		foreach (ee()->simple_cloner_settings->_default_settings as $key => $value)
 		{
 			if(($settings[$key] = ee()->input->post($key)) == FALSE)
 			{

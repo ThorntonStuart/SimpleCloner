@@ -280,21 +280,27 @@ class Simple_cloner_ext {
 				}
 			}
 
-			// Ansel support
-			$ansel_images = ee()->db->query('SELECT * FROM exp_ansel_images WHERE content_id = '.$data['entry_id'].' AND content_type = "channel"');
+			$ansel = ee('Addon')->get('ansel');
+			$assets = ee('Addon')->get('assets');
 
-			$this->duplicate_ansel($ansel_images, $entry_id_of_duplicate);
+			if ($ansel && $ansel->isInstalled()) {
+				// Ansel support
+				$ansel_images = ee()->db->query('SELECT * FROM exp_ansel_images WHERE content_id = '.$data['entry_id'].' AND content_type = "channel"');
 
+				$this->duplicate_ansel($ansel_images, $entry_id_of_duplicate);
+			}
 
-			//assets support alone
-			$assets_selections = ee()->db->query('SELECT * FROM exp_assets_selections WHERE entry_id = '.$data['entry_id'].' AND content_type IS NULL');
+			if ($assets && $assets->isInstalled()) {
+				//assets support alone
+				$assets_selections = ee()->db->query('SELECT * FROM exp_assets_selections WHERE entry_id = '.$data['entry_id'].' AND content_type IS NULL');
 
-			if ($assets_selections->num_rows != 0){
-				$all_assets = $assets_selections->result();
-				foreach($all_assets as $kee => $vals) {
-					$prop = get_object_vars($vals);
-					$prop['entry_id'] = $entry_id_of_duplicate;
-					ee()->db->insert('assets_selections', $prop);
+				if ($assets_selections->num_rows != 0){
+					$all_assets = $assets_selections->result();
+					foreach($all_assets as $kee => $vals) {
+						$prop = get_object_vars($vals);
+						$prop['entry_id'] = $entry_id_of_duplicate;
+						ee()->db->insert('assets_selections', $prop);
+					}
 				}
 			}
 
@@ -338,21 +344,24 @@ class Simple_cloner_ext {
 
 								$new_row_id = ee()->db->insert_id();
 
-								$assets_selections = ee()->db->query('SELECT * FROM exp_assets_selections WHERE entry_id = '.$data['entry_id'].' AND content_type = "grid" AND row_id ='.$save_row_id);
-								if ($assets_selections->num_rows != 0){
-									$all_assets = $assets_selections->result();
-									foreach($all_assets as $kee => $vals){
-										$prop = get_object_vars($vals);
-										$prop['entry_id'] = $entry_id_of_duplicate;
-										$prop['row_id'] = $new_row_id;
-										ee()->db->insert('assets_selections', $prop);
+								if ($assets && $assets->isInstalled()) {
+									$assets_selections = ee()->db->query('SELECT * FROM exp_assets_selections WHERE entry_id = '.$data['entry_id'].' AND content_type = "grid" AND row_id ='.$save_row_id);
+									if ($assets_selections->num_rows != 0){
+										$all_assets = $assets_selections->result();
+										foreach($all_assets as $kee => $vals){
+											$prop = get_object_vars($vals);
+											$prop['entry_id'] = $entry_id_of_duplicate;
+											$prop['row_id'] = $new_row_id;
+											ee()->db->insert('assets_selections', $prop);
+										}
 									}
 								}
 
-								// Ansel support
-								$ansel_images = ee()->db->query('SELECT * FROM exp_ansel_images WHERE content_id = '.$data['entry_id'].' AND content_type = "grid" AND row_id ='.$save_row_id);
-								$this->duplicate_ansel($ansel_images, $entry_id_of_duplicate, $new_row_id);
-
+								if ($ansel && $ansel->isInstalled()) {
+									// Ansel support
+									$ansel_images = ee()->db->query('SELECT * FROM exp_ansel_images WHERE content_id = '.$data['entry_id'].' AND content_type = "grid" AND row_id ='.$save_row_id);
+									$this->duplicate_ansel($ansel_images, $entry_id_of_duplicate, $new_row_id);
+								}
 							}
 						}
 					}
@@ -427,20 +436,24 @@ class Simple_cloner_ext {
 								$save_row_id = $gridRow->id;
 								$latest_id = ee()->db->insert_id();
 
-								$assets_selections = ee()->db->query('SELECT * FROM exp_assets_selections WHERE entry_id = '.$data['entry_id'].' AND content_type = "grid" AND row_id ='.$save_row_id);
-								if ($assets_selections->num_rows != 0){
-									$all_assets = $assets_selections->result();
-									foreach($all_assets as $kee => $vals){
-										$prop = get_object_vars($vals);
-										$prop['entry_id'] = $entry_id_of_duplicate;
-										$prop['row_id'] = $latest_id;
-										ee()->db->insert('assets_selections', $prop);
+								if ($assets && $assets->isInstalled()) {
+									$assets_selections = ee()->db->query('SELECT * FROM exp_assets_selections WHERE entry_id = '.$data['entry_id'].' AND content_type = "grid" AND row_id ='.$save_row_id);
+									if ($assets_selections->num_rows != 0){
+										$all_assets = $assets_selections->result();
+										foreach($all_assets as $kee => $vals){
+											$prop = get_object_vars($vals);
+											$prop['entry_id'] = $entry_id_of_duplicate;
+											$prop['row_id'] = $latest_id;
+											ee()->db->insert('assets_selections', $prop);
+										}
 									}
 								}
 
-								// Ansel support
-								$ansel_images = ee()->db->query('SELECT * FROM exp_ansel_images WHERE content_id = '.$data['entry_id'].' AND content_type = "blocks" AND row_id ='.$save_row_id);
-								$this->duplicate_ansel($ansel_images, $entry_id_of_duplicate, $latest_id);
+								if ($ansel && $ansel->isInstalled()) {
+									// Ansel support
+									$ansel_images = ee()->db->query('SELECT * FROM exp_ansel_images WHERE content_id = '.$data['entry_id'].' AND content_type = "blocks" AND row_id ='.$save_row_id);
+									$this->duplicate_ansel($ansel_images, $entry_id_of_duplicate, $latest_id);
+								}
 
 								$bloqs_content_rows = ee()->db->query("SELECT * FROM exp_blocks_atom WHERE block_id = ". $gridRow->id);
 								$result = $bloqs_content_rows->result();

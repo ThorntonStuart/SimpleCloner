@@ -102,7 +102,6 @@ class Simple_cloner_ext {
 			$entry_query_array = $entry_query[0];
 			$entry_query_array = get_object_vars($entry_query_array);
 		}
-
 		// Check that row has been assigned and that the entry cloning flag has been checked.
 		if(isset($entry_query_array) == TRUE && $entry_query_array['clone_entry'] != 0)
 		{
@@ -411,7 +410,7 @@ class Simple_cloner_ext {
 							$arrayValue = get_object_vars($grid_field);
 
 							$grid_id = $arrayValue['field_id'];
-							$grid_data = ee()->db->query("SELECT * FROM exp_blocks_block WHERE entry_id = ". $data['entry_id']);
+							$grid_data = ee()->db->query("SELECT * FROM exp_blocks_block WHERE entry_id = ". $data['entry_id']. " AND field_id = " . $field_id);
 
 							$grid = $grid_data->result();
 

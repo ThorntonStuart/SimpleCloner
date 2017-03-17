@@ -14,7 +14,7 @@ require_once PATH_THIRD . 'simple_cloner/config.php';
 class Simple_cloner_tab {
 
 	var $class_name		=	SIMPLE_CLONER_NAME_FORMATTED;
-	
+
 	/**
 	 * Constructor
 	 *
@@ -32,7 +32,7 @@ class Simple_cloner_tab {
 		{
 			ee()->lang->language['simple_cloner'] = $tab_title;
 		}
-	}	
+	}
 
 	/**
 	 * Tab display

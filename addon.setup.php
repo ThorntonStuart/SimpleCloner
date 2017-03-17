@@ -5,7 +5,7 @@ return array(
     'author_url'     => 'http://www.github.com/ThorntonStuart',
     'name'           => 'Simple Cloner',
     'description'    => 'Adds the Ability to Clone Entries.',
-    'version'        => '1.0.0',
+    'version'        => '1.2.1',
     'namespace'      => '\\',
     'settings_exist' => TRUE,
 );

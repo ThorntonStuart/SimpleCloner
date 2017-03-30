@@ -26,7 +26,7 @@ class Simple_cloner_tab {
 		// Load module lang file and set tab title.
 		ee()->lang->loadfile('simple_cloner');
 
-		$tab_title = 'Simple Cloner';
+		$tab_title = 'Clone Entry';
 
 		if($tab_title)
 		{
@@ -114,6 +114,66 @@ class Simple_cloner_tab {
 			'field_type' => 'toggle',
 			'field_maxl' => '1024'
 		);
+		$hasTranscribe = ee()->db->select('*')
+							->from('extensions')
+							->where(array(
+								'class'	=>	'Transcribe_ext'
+							))
+							->get();
+
+
+		if ($hasTranscribe->num_rows() !== 0){
+			$settings['clone_entry_translated'] = array(
+				'field_id'	=>	'clone_entry_translated',
+				'field_label'	=>	lang('tab_clone_entry_translated'),
+				'field_required'	=>	'n',
+				'field_data'	=>	'test',
+				'field_list_items' => '',
+				'field_fmt' => '',
+				'options' => array(),
+				'field_instructions' => lang('tab_clone_entry_translated_instructions'),
+				'field_show_fmt' => 'n',
+				'field_fmt_options' => array(),
+				'field_pre_populate' => 'n',
+				'field_text_direction' => 'ltr',
+				'field_type' => 'select',
+				'field_list_items' => array(
+				'0' => 'No'
+				),
+				'field_maxl' => '1024'
+			);
+			$hashed_id = '';
+			$taken_langs = array();
+			$translations = ee()->db->select('*')
+											->from('transcribe_entries_languages')
+											->where(array(
+												'entry_id' => $entry_id
+											))->get();
+			foreach($translations->result_array() as $row){
+				$hashed_id = $row['relationship_id'];
+			}
+			$availableTranslations = ee()->db->select('*')
+														->from('transcribe_entries_languages')
+														->where(array(
+															'relationship_id' => $hashed_id
+														))->get();
+			foreach($availableTranslations->result_array() as $row){
+				array_push($taken_langs, $row['language_id']);
+			}
+			$comma_separated = implode(",", $taken_langs);
+			if ($availableTranslations->num_rows() !== 0){
+				$languages = ee()->db->select('*')
+									->from('transcribe_languages')
+									->where('id NOT IN ('.$comma_separated. ')')
+									->get();
+		foreach($languages->result_array() as $secondRow){
+			$settings['clone_entry_translated']['field_list_items'][$secondRow['id']] = $secondRow['name'];
+		}
+			}
+
+	}
+
+
 
 		// Check if toggle is a fieldtype in user's EE version. If not, change fieldtype.
 		$hasToggle = ee()->db->select('*')
@@ -212,6 +272,7 @@ class Simple_cloner_tab {
 				default:
 					$params['clone_entry'] = '0';
 			}
+
 		}
 
 		// Assign content variables to be entered into Simple Cloner Content table.

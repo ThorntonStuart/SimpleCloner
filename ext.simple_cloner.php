@@ -83,6 +83,8 @@ class Simple_cloner_ext {
 		return $clean;
 	}
 
+
+
 	/**
 	 * Clone after entry save
 	 *
@@ -93,6 +95,7 @@ class Simple_cloner_ext {
 	 */
 	public function simple_cloner_content_save($entry, $data)
 	{
+		$carrydata = $data;
 		// Query for entry row in Simple Cloner content created from tab save. If it returns correctly, assign row and convert from object to array.
 		$entry_query = ee()->db->query("SELECT * FROM exp_simple_cloner_content WHERE entry_id = " . $data['entry_id']);
 		$entry_query = $entry_query->result();
@@ -264,6 +267,48 @@ class Simple_cloner_ext {
 			// Update cloned entry with custom field data.
 
 			ee()->api_channel_entries->update_entry($entry_id_of_duplicate, $data);
+
+
+			//Transcribe Support for assigning clone as a 'translation'
+
+
+			if ($carrydata['simple_cloner__clone_entry_translated'] !== 0){
+				$hash = '';
+				$getHash = ee()->db->select('*')->from('transcribe_entries_languages')->where(array(
+					'entry_id' => $data['entry_id']
+				))->get();
+				if ($getHash->num_rows() > 0){
+					foreach($getHash->result_array() as $row){
+						$hash = $row['relationship_id'];
+					}
+				}
+				ee()->db->insert('transcribe_entries_languages', array(
+					'id' => 0,
+					'language_id' => $carrydata['simple_cloner__clone_entry_translated'],
+					'entry_id' => $query_result,
+					'relationship_id' => $hash
+				));
+				$isStructure = ee()->db->select('*')->from('structure')->where(array(
+					'entry_id' => $data['entry_id']
+				))->get();
+				if ($isStructure->num_rows() > 0){
+					foreach($isStructure->result_array() as $secondRow){
+						ee()->db->insert('structure', array(
+							'site_id' => $secondRow['site_id'],
+							'entry_id' => $query_result,
+							'parent_id' => 0,
+							'channel_id' => $secondRow['channel_id'],
+							'listing_cid' => $secondRow['listing_cid'],
+							'lft' => $secondRow['lft']+($carrydata['simple_cloner__clone_entry_translated'] * 1000),
+							'rgt' => $secondRow['rgt']+($carrydata['simple_cloner__clone_entry_translated'] * 1000),
+							'dead' => $secondRow['dead'],
+							'hidden' => $secondRow['hidden']
+						));
+					}
+				}
+			}
+
+
 
 			//carry over the categories
 

@@ -40,8 +40,8 @@ class Simple_cloner_mcp {
 		$vars['sections'] = array(
 			array(
 				array(
-					'title'	=>	'title_suffix',
-					'desc'	=>	'title_suffix',
+					'title'		=>	'title_suffix',
+					'desc'		=>	'title_suffix',
 					'fields'	=>	array(
 						'title_suffix'	=>	array(
 							'type'	=>	'text',
@@ -50,8 +50,8 @@ class Simple_cloner_mcp {
 					)
 				),
 				array(
-					'title'	=>	'url_title_suffix',
-					'desc'	=>	'url_title_suffix',
+					'title'		=>	'url_title_suffix',
+					'desc'		=>	'url_title_suffix',
 					'fields'	=>	array(
 						'url_title_suffix'	=>	array(
 							'type'	=>	'text',
@@ -60,8 +60,8 @@ class Simple_cloner_mcp {
 					)
 				),
 				array(
-					'title'	=>	'update_entry_time',
-					'desc'	=>	'update_entry_time',
+					'title'		=>	'update_entry_time',
+					'desc'		=>	'update_entry_time',
 					'fields'	=>	array(
 						'update_entry_time'	=>	array(
 							'type'	=>	'yes_no',

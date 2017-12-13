@@ -24,13 +24,12 @@ class Simple_cloner_upd {
 	 *
 	 * @return	bool
 	 */
-	public function install()
-	{
+	public function install() {
 		// Insert data to modules table.
 		$data = array(
-			'module_name'	=>	'Simple_cloner',
-			'module_version'	=>	$this->version,
-			'has_cp_backend'	=>	'y',
+			'module_name'			=>	'Simple_cloner',
+			'module_version'		=>	$this->version,
+			'has_cp_backend'		=>	'y',
 			'has_publish_fields'	=>	'y'
 		);
 
@@ -38,43 +37,46 @@ class Simple_cloner_upd {
 
 		// Load settings library and DBForge class.
 		ee()->load->library('simple_cloner_settings');
-
 		ee()->load->dbforge();
 
 		// Create Simple Cloner Content table and insert table fields.
 		$simple_cloner_content_fields = array(
 			'simple_cloner_content_id'	=>	array(
-				'type'	=>	'int',
-				'constraint'	=>	'10',
-				'unsigned'	=>	TRUE,
+				'type'				=>	'int',
+				'constraint'		=>	'10',
+				'unsigned'			=>	TRUE,
 				'auto_increment'	=>	TRUE
 			),
 			'site_id'	=>	array(
-				'type'	=>	'int',
+				'type'			=>	'int',
 				'constraint'	=>	'10',
-				'null'	=>	FALSE
+				'null'			=>	FALSE
 			),
 			'entry_id'	=>	array(
-				'type'	=>	'int',
+				'type'			=>	'int',
 				'constraint'	=>	'10',
-				'null'	=>	FALSE
+				'null'			=>	FALSE
+			),
+			'cloned_entry_status'	=>	array(
+				'type'			=>	'varchar',
+				'constraint'	=>	'1024'
 			),
 			'title_suffix'	=>	array(
-				'type'	=>	'varchar',
+				'type'			=>	'varchar',
 				'constraint'	=>	'1024'
 			),
 			'url_title_suffix'	=>	array(
-				'type'	=>	'varchar',
+				'type'			=>	'varchar',
 				'constraint'	=>	'1024'
 			),
 			'update_entry_time'	=>	array(
-				'type'	=>	'varchar',
+				'type'			=>	'varchar',
 				'constraint'	=>	'1024'
 			),
 			'clone_entry'	=>	array(
-				'type'	=>	'varchar',
+				'type'			=>	'varchar',
 				'constraint'	=>	'1024',
-				'null'	=>	FALSE
+				'null'			=>	FALSE
 			)
 		);
 
@@ -97,11 +99,22 @@ class Simple_cloner_upd {
 	 *
 	 * @return	bool
 	 */
-	public function update($current = '')
-	{
-		if($current == $this->version)
-		{
+	public function update($current = '') {
+		ee()->load->dbforge();
+
+		if($current == $this->version) {
 			return FALSE;
+		}
+
+		if(version_compare($current, '2.0.0', '<')) {
+			$simple_cloner_content_2_0_0 = array(
+				'cloned_entry_status'	=>	array(
+					'type'			=>	'varchar',
+					'constraint'	=>	'1024'
+				)
+			);
+
+			ee()->dbforge->add_column('simple_cloner_content', $simple_cloner_content_2_0_0);
 		}
 
 		return TRUE;
@@ -112,8 +125,7 @@ class Simple_cloner_upd {
 	 *
 	 * @return	bool
 	 */
-	public function uninstall()
-	{
+	public function uninstall() {
 		// Load DBForge class.
 		ee()->load->dbforge();
 
@@ -138,29 +150,35 @@ class Simple_cloner_upd {
 	public function tabs()
 	{
 		$tabs['simple_cloner'] = array(
-			'title_suffix'	=>	array(
-				'visible'	=>	'true',
-				'collapse'	=>	'false',
+			'cloned_entry_status'	=>	array(
+				'visible'		=>	'true',
+				'collapse'		=>	'false',
 				'htmlbuttons'	=>	'true',
-				'width'	=>	'100%'
+				'width'			=>	'100%'
+			),
+			'title_suffix'	=>	array(
+				'visible'		=>	'true',
+				'collapse'		=>	'false',
+				'htmlbuttons'	=>	'true',
+				'width'			=>	'100%'
 			),
 			'url_title_suffix'	=>	array(
-				'visible'	=>	'true',
-				'collapse'	=>	'false',
+				'visible'		=>	'true',
+				'collapse'		=>	'false',
 				'htmlbuttons'	=>	'true',
-				'width'	=>	'100%'
+				'width'			=>	'100%'
 			),
 			'update_entry_time'	=>	array(
-				'visible'	=>	'true',
-				'collapse'	=>	'false',
+				'visible'		=>	'true',
+				'collapse'		=>	'false',
 				'htmlbuttons'	=>	'true',
-				'width'	=>	'100%'
+				'width'			=>	'100%'
 			),
 			'clone_entry'	=>	array(
-				'visible'	=>	'true',
-				'collapse'	=>	'false',
+				'visible'		=>	'true',
+				'collapse'		=>	'false',
 				'htmlbuttons'	=>	'true',
-				'width'	=>	'100%'
+				'width'			=>	'100%'
 			)
 		);
 

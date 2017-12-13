@@ -7,6 +7,8 @@ $lang = array(
 
 'message_success'=>'Success!',
 
+'tab_cloned_entry_status'   =>  'Cloned Entry Status',
+'tab_cloned_entry_status_instructions'  =>  'Select the status that the new entry should take on creation. Channel Default will use the default status value for this channel.',
 'tab_title_suffix'	=>	'Title Suffix',
 'tab_title_suffix_instructions'	=>	'If desired, enter a Title suffix to differentiate the cloned entry from the original.',
 'tab_url_title_suffix'	=>	'URL Title Suffix',

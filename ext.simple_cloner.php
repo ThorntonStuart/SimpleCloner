@@ -465,7 +465,7 @@ class Simple_cloner_ext {
 			}
 		}
 
-		if(sizeOf($ansel_fields) > 0) {
+		if($ansel && $ansel->isInstalled() && sizeOf($ansel_fields) > 0) {
 			$ansel_field_array = array();
 
 			foreach($ansel_fields as $anselKey => $anselVal) {

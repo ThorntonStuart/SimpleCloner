@@ -134,17 +134,27 @@ class Simple_cloner_tab {
 							->where(array('name' =>	'toggle'))
 							->get();
 
-		$status_group_query = ee()->db->select('status_group')
-								->from('channels')
-								->where('channel_id', $channel_id)
-								->get();
-		$status_group = $status_group_query->result_array();
+        if (ee()->db->field_exists('status_group', 'channels')){
+            $status_group_query = ee()->db->select('status_group')
+                ->from('channels')
+                ->where('channel_id', $channel_id)
+                ->get();
+            $status_group = $status_group_query->result_array();
 
-		$statuses_query = ee()->db->select('status')
-							->from('statuses')
-							->where('group_id', $status_group[0]['status_group'])
-							->get();
-		$statuses = $statuses_query->result_array();
+            $statuses_query = ee()->db->select('status')
+                ->from('statuses')
+                ->where('group_id', $status_group[0]['status_group'])
+                ->get();
+            $statuses = $statuses_query->result_array();
+        }
+        else if (ee()->db->table_exists('channels_statuses')) {
+            $statuses = ee()->db->select('s.status')
+                ->from('statuses s')
+                ->join('channels_statuses cs', 'cs.status_id = s.status_id', 'left')
+                ->where('cs.channel_id', $channel_id)
+                ->get()
+                ->result_array();
+        }
 
 		$settings['cloned_entry_status']['field_type'] = 'select';
 		$settings['cloned_entry_status']['field_list_items'] = array();
@@ -152,7 +162,13 @@ class Simple_cloner_tab {
 		array_push($settings['cloned_entry_status']['field_list_items'], "Channel Default");
 
 		foreach($statuses as $key => $value) {
-			array_push($settings['cloned_entry_status']['field_list_items'], ucwords($statuses[$key]['status']));
+            if (ee()->db->field_exists('status_group', 'channels')) {
+                $status_text = ucwords($statuses[$key]['status']);
+            }
+            else if (ee()->db->table_exists('channels_statuses')) {
+                $status_text = ucwords($value['status']);
+            }
+            array_push($settings['cloned_entry_status']['field_list_items'], $status_text);
 		}
 
 		if($hasToggle->num_rows() == 0) {

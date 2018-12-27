@@ -371,10 +371,10 @@ class Simple_cloner_ext {
 			return false;
 		}
 
-		// Format date for database re-entry.
-		if(! is_string($data['recent_comment_date'])) {
-			$data['recent_comment_date'] = $data['recent_comment_date']->format('Y-m-d');
-		}
+        // Format date for database re-entry.
+        if(isset($data['recent_comment_date']) && ! is_string($data['recent_comment_date'])) {
+            $data['recent_comment_date'] = $data['recent_comment_date']->format('Y-m-d');
+        }
 
 		// Load channel entries API.
 		ee()->load->library('api');
@@ -399,17 +399,30 @@ class Simple_cloner_ext {
 				$channel_default = (array)$channel_default->row();
 				$data['status'] = $channel_default['deft_status'];
 			} else {
-				$status_group = ee()->db->select('status_group')
-										->from('channels')
-										->where('channel_id', $data['channel_id'])
-										->get()
-										->result_array();
 
-				$statuses = ee()->db->select('status')
-									->from('statuses')
-									->where('group_id', $status_group[0]['status_group'])
-									->get()
-									->result_array();
+                if (ee()->db->field_exists('status_group', 'channels')){
+                    $status_group = ee()->db->select('status_group')
+                        ->from('channels')
+                        ->where('channel_id', $data['channel_id'])
+                        ->get()
+                        ->result_array();
+
+                    $statuses = ee()->db->select('status')
+                        ->from('statuses')
+                        ->where('group_id', $status_group[0]['status_group'])
+                        ->get()
+                        ->result_array();
+
+                }
+                else if (ee()->db->table_exists('channels_statuses')) {
+                    $statuses = ee()->db->select('s.status')
+                        ->from('statuses s')
+                        ->join('channels_statuses cs', 'cs.status_id = s.status_id', 'left')
+                        ->where('cs.channel_id', $data['channel_id'])
+                        ->get()
+                        ->result_array();
+
+                }
 
 				$status = (int)$entry['cloned_entry_status'] - 1;
 				$data['status'] = $statuses[$status]['status'];
